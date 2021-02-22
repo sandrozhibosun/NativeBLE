@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/my_nav"
+    app:startDestination="@id/navigation_scan">
+
+    <fragment
+        android:id="@+id/navigation_scan"
+        android:name="com.apolis.bltindoor.ui.scan.ScanFragment"
+        android:label="scan_fragment"
+        tools:layout="@layout/scan_fragment" >
+        <action
+            android:id="@+id/action_scanFragment_to_operationFragment"
+            app:destination="@id/navigation_operation" />
+    </fragment>
+    <fragment
+        android:id="@+id/navigation_operation"
+        android:name="com.apolis.bltindoor.ui.operation.OperationFragment"
+        android:label="operation_fragment"
+        tools:layout="@layout/operation_fragment" >
+        <action
+            android:id="@+id/action_operationFragment_to_historyFragment"
+            app:destination="@id/navigation_history" />
+    </fragment>
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="com.apolis.bltindoor.ui.history.HistoryFragment"
+        android:label="fragment_history"
+        tools:layout="@layout/fragment_history" />
+</navigation>
