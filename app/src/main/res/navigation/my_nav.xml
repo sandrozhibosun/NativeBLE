@@ -12,11 +12,17 @@
         tools:layout="@layout/scan_fragment" >
         <action
             android:id="@+id/action_scanFragment_to_operationFragment"
-            app:destination="@id/navigation_operation" />
+            app:destination="@id/navigation_operation"
+            />
+<!--        <argument-->
+<!--            android:name="bledevice"-->
+<!--            app:argType="Parcelable"-->
+<!--            android:defaultValue="0" />-->
     </fragment>
     <fragment
         android:id="@+id/navigation_operation"
         android:name="com.apolis.bltindoor.ui.operation.OperationFragment"
+
         android:label="operation_fragment"
         tools:layout="@layout/operation_fragment" >
         <action

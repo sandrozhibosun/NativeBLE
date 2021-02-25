@@ -18,26 +18,29 @@ import javax.inject.Inject
 
 class ScanViewModel : ViewModel() {
     @Inject
-    lateinit var bleManager:BleManager
+    lateinit var bleManager: BleManager
+
     init {
-        val component= DaggerAppComponent.create()
+        val component = DaggerAppComponent.create()
         component.inject(this)
 
     }
-    var deviceGetListener:DeviceGetListener?=null
-    var deviceCallbackListener:DeviceCallbackListener?=null
+
+    var deviceGetListener: DeviceGetListener? = null
+    var deviceCallbackListener: DeviceCallbackListener? = null
 
     // TODO: Implement the ViewModel
     fun setScanRule() {
         val scanRuleConfig = BleScanRuleConfig.Builder()
-            .setScanTimeOut(10000) // 扫描超时时间，可选，默认10秒
+            .setScanTimeOut(10000) //
             .build()
         bleManager.initScanRule(scanRuleConfig)
     }
+
     fun startScan() {
 //        var res=MutableLiveData<ArrayList<BleDevice>>()
 //        var temp=ArrayList<BleDevice>()
-        BleManager.getInstance().scan(object : BleScanCallback() {
+        bleManager.scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
                 deviceGetListener!!.onClear()
 //                res.postValue(temp)
@@ -66,10 +69,12 @@ class ScanViewModel : ViewModel() {
             }
         })
 
+
 //        deviceGetListener!!.onGet(res)
     }
-    fun onConnectDevice(bleDevice: BleDevice){
-        if(!bleManager.isConnected(bleDevice)){
+
+    fun onConnectDevice(bleDevice: BleDevice) {
+        if (!bleManager.isConnected(bleDevice)) {
             bleManager.cancelScan()
         }
         bleManager.connect(bleDevice, object : BleGattCallback() {
@@ -109,40 +114,40 @@ class ScanViewModel : ViewModel() {
 
         })
     }
-    fun onDisconnectDevice(bleDevice: BleDevice){
+
+    fun onDisconnectDevice(bleDevice: BleDevice) {
         bleManager.disconnect(bleDevice)
     }
-    fun onDetail(bleDevice: BleDevice){
-        if (bleManager.isConnected(bleDevice))
-        {
+
+    fun onDetail(bleDevice: BleDevice) {
+        if (bleManager.isConnected(bleDevice)) {
             deviceCallbackListener!!.onDetailCallBack("this is connected device")
-        }
-        else{
+        } else {
             deviceCallbackListener!!.onDetailCallBack("this device didn't connected")
         }
     }
 
 
     private fun readRssi(bleDevice: BleDevice) {
-        BleManager.getInstance().readRssi(bleDevice, object : BleRssiCallback() {
+        bleManager.readRssi(bleDevice, object : BleRssiCallback() {
             override fun onRssiFailure(exception: BleException) {
-                Log.d("abc","onRssiFailure$exception")
+                Log.d("abc", "onRssiFailure$exception")
             }
 
             override fun onRssiSuccess(rssi: Int) {
-                Log.d("abc","onRssiSuccess: $rssi")
+                Log.d("abc", "onRssiSuccess: $rssi")
             }
         })
     }
 
     private fun setMtu(bleDevice: BleDevice, mtu: Int) {
-        BleManager.getInstance().setMtu(bleDevice, mtu, object : BleMtuChangedCallback() {
+        bleManager.setMtu(bleDevice, mtu, object : BleMtuChangedCallback() {
             override fun onSetMTUFailure(exception: BleException) {
-                Log.d("abc","onsetMTUFailure$exception")
+                Log.d("abc", "onsetMTUFailure$exception")
             }
 
             override fun onMtuChanged(mtu: Int) {
-                Log.d("abc","onMtuChanged: $mtu")
+                Log.d("abc", "onMtuChanged: $mtu")
             }
         })
     }

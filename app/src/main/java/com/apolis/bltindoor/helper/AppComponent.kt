@@ -1,5 +1,7 @@
 package com.apolis.bltindoor.helper
 
+import com.apolis.bltindoor.ui.operation.OperationFragment
+import com.apolis.bltindoor.ui.operation.OperationViewModel
 import com.apolis.bltindoor.ui.scan.ScanFragment
 import com.apolis.bltindoor.ui.scan.ScanViewModel
 import com.clj.fastble.BleManager
@@ -10,4 +12,5 @@ import javax.inject.Singleton
 @Component(modules = arrayOf(BLEManagerModule::class))
 interface AppComponent {
     fun inject(scanViewModel: ScanViewModel)
+    fun inject(operationFragment: OperationFragment)
 }

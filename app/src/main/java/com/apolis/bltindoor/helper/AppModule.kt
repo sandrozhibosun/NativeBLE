@@ -11,9 +11,9 @@ class BLEManagerModule {
 
     @Provides
     @Singleton
-    fun CreateBleManager():BleManager{
-        var bleManager=BleManager.getInstance()
-            bleManager.init(MyApplication.getInstance())
+    fun CreateBleManager(): BleManager {
+        var bleManager = BleManager.getInstance()
+        bleManager.init(MyApplication.getInstance())
         //configuration of ble manager
         bleManager.enableLog(true)
             .setMaxConnectCount(10)

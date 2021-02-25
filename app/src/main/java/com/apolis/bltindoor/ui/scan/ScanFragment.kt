@@ -21,7 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.apolis.bltindoor.R
 import com.apolis.bltindoor.databinding.ScanFragmentBinding
 import com.apolis.bltindoor.helper.DaggerAppComponent
 import com.clj.fastble.BleManager
@@ -32,8 +34,10 @@ import kotlinx.android.synthetic.main.scan_fragment.*
 import javax.inject.Inject
 
 
-class ScanFragment : Fragment(),DeviceGetListener {
+class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     lateinit var binding: ScanFragmentBinding
+
+
     companion object {
         fun newInstance() = ScanFragment()
         private const val REQUEST_CODE_OPEN_GPS = 1
@@ -47,16 +51,17 @@ class ScanFragment : Fragment(),DeviceGetListener {
 //    lateinit var bleManager:BleManager
 
     private lateinit var viewModel: ScanViewModel
-    private val viewAdapter=DeviceAdapter().apply{
-        parentFragment=this@ScanFragment
+    private val viewAdapter = DeviceAdapter().apply {
+        parentFragment = this@ScanFragment
+        onConnectCallListener= this@ScanFragment
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        binding= ScanFragmentBinding.inflate(inflater, container, false)
-        val view=binding.root
+        binding = ScanFragmentBinding.inflate(inflater, container, false)
+        val view = binding.root
 
         return view
 
@@ -67,14 +72,15 @@ class ScanFragment : Fragment(),DeviceGetListener {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(ScanViewModel::class.java)
         // TODO: Use the ViewModel
-        viewModel.deviceGetListener=this
+        viewModel.deviceGetListener = this
         init()
 
     }
-    fun init(){
+
+    fun init() {
         binding.deviceRecyclerView.apply {
-            adapter=viewAdapter
-            layoutManager=LinearLayoutManager(requireContext())
+            adapter = viewAdapter
+            layoutManager = LinearLayoutManager(requireContext())
         }
 
         //set scan
@@ -83,7 +89,8 @@ class ScanFragment : Fragment(),DeviceGetListener {
         }
 
     }
-    fun checkPermissions(){
+
+    fun checkPermissions() {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (!bluetoothAdapter.isEnabled) {
             Toast.makeText(requireContext(), "please open bluetooth", Toast.LENGTH_LONG).show()
@@ -109,6 +116,7 @@ class ScanFragment : Fragment(),DeviceGetListener {
             )
         }
     }
+
     private fun onPermissionGranted(permission: String) {
         when (permission) {
             Manifest.permission.ACCESS_FINE_LOCATION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkGPSIsOpen()) {
@@ -137,12 +145,14 @@ class ScanFragment : Fragment(),DeviceGetListener {
             }
         }
     }
+
     private fun openAppSettings() {
         var intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
         var uri = Uri.fromParts("package", activity?.packageName, null)
         intent.setData(uri)
         startActivityForResult(intent, REQUEST_CODE_OPEN_GPS)
     }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_OPEN_GPS) {
@@ -152,8 +162,10 @@ class ScanFragment : Fragment(),DeviceGetListener {
             }
         }
     }
+
     private fun checkGPSIsOpen(): Boolean {
-        val locationManager = requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager?
+        val locationManager =
+            requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager?
         return locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
 
@@ -167,9 +179,17 @@ class ScanFragment : Fragment(),DeviceGetListener {
     override fun onClear() {
         viewAdapter.clearScanDevice()
     }
+
+    override fun onDetailClicked(bleDevice: BleDevice) {
+        var bundle = Bundle()
+        bundle.putParcelable("device", bleDevice)
+
+
+        Navigation.findNavController(binding.root).navigate(
+            R.id.action_scanFragment_to_operationFragment
+        )
+    }
     //from start to here is for ask bluetooth and location permissions. now set scan rules and start scan
-
-
 
 
 }
