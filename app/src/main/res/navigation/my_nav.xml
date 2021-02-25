@@ -11,7 +11,7 @@
         android:label="scan_fragment"
         tools:layout="@layout/scan_fragment" >
         <action
-            android:id="@+id/action_scanFragment_to_operationFragment"
+            android:id="@+id/scanFragment_to_operationFragment"
             app:destination="@id/navigation_operation"
             />
 <!--        <argument-->

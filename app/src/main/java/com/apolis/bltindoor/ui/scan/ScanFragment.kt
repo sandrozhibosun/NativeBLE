@@ -181,13 +181,12 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
     override fun onDetailClicked(bleDevice: BleDevice) {
-        var bundle = Bundle()
-        bundle.putParcelable("device", bleDevice)
-
-
-        Navigation.findNavController(binding.root).navigate(
-            R.id.action_scanFragment_to_operationFragment
-        )
+//        var bundle = Bundle()
+//        bundle.putParcelable("device", bleDevice)
+//
+//        Navigation.findNavController(binding.root).navigate(
+//            R.id.scanFragment_to_operationFragment,bundle
+//        )
     }
     //from start to here is for ask bluetooth and location permissions. now set scan rules and start scan
 

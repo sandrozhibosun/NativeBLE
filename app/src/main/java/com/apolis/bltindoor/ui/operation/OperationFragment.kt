@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.navigation.fragment.navArgs
 import com.apolis.bltindoor.R
 import com.apolis.bltindoor.helper.DaggerAppComponent
@@ -56,8 +57,11 @@ class OperationFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-//        bleDevice = arguments?.get("device") as BleDevice
-//        init()
+
+        bleDevice = arguments?.get("device") as BleDevice
+            if(!bleDevice.equals(null)){
+                init()
+        }
     }
 
     private fun init() {
@@ -114,9 +118,7 @@ class OperationFragment : Fragment() {
                     Log.d("abc","onRead Success")
                    var string=data.toString()
 
-
                 }
-
                 override fun onReadFailure(exception: BleException?) {
                     Log.d("abc","onRead Failure")
                 }

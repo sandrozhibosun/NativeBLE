@@ -121,9 +121,9 @@ class ScanViewModel : ViewModel() {
 
     fun onDetail(bleDevice: BleDevice) {
         if (bleManager.isConnected(bleDevice)) {
-            deviceCallbackListener!!.onDetailCallBack("this is connected device")
+            deviceCallbackListener!!.onDetailCallBack("this is connected device", bleDevice)
         } else {
-            deviceCallbackListener!!.onDetailCallBack("this device didn't connected")
+            deviceCallbackListener!!.onDetailCallBack("this device didn't connected", null)
         }
     }
 

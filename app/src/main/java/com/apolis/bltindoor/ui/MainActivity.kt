@@ -24,8 +24,8 @@ class MainActivity : AppCompatActivity() {
         val navController=
             (supportFragmentManager.findFragmentById(R.id.navi_host_fragment_in_main_activity) as NavHostFragment)
                 .navController
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
+//         Passing each menu ID as a set of Ids because each
+//         menu should be considered as top level destinations.
         val appBarConfiguration= AppBarConfiguration(setOf(
             R.id.navigation_scan,
             R.id.navigation_operation,

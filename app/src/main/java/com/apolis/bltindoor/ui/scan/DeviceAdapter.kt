@@ -54,9 +54,8 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         }
         holder.binding.btnDetail.setOnClickListener {
             viewModel.onDetail(device)
-            onConnectCallListener.onDetailClicked(device)
-//            var bundle = Bundle()
-//            bundle.putParcelable("device", device)
+//            onConnectCallListener.onDetailClicked(device)
+
 //            Navigation.findNavController(it).navigate(
 //                R.id.action_scanFragment_to_operationFragment, bundle
 //            )
@@ -92,11 +91,15 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         TODO("Not yet implemented")
     }
 
-    override fun onDetailCallBack(message: String) {
-        Toast.makeText(parentFragment!!.requireContext(), message, Toast.LENGTH_SHORT).show()
-        Navigation.findNavController(parentFragment!!.requireView())
-            .navigate(R.id.action_scanFragment_to_operationFragment)
+    override fun onDetailCallBack(message: String,bleDevice: BleDevice?) {
 
+        Toast.makeText(parentFragment!!.requireContext(), message, Toast.LENGTH_SHORT).show()
+        if(bleDevice!=null){
+        var bundle = Bundle()
+        bundle.putParcelable("device", bleDevice)
+        Navigation.findNavController(parentFragment!!.requireView())
+            .navigate(R.id.scanFragment_to_operationFragment,bundle)
+        }
     }
 
 }
