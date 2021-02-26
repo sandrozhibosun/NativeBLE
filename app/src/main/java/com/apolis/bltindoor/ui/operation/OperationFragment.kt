@@ -17,11 +17,14 @@ import com.apolis.bltindoor.app.Const
 import com.apolis.bltindoor.helper.DaggerAppComponent
 import com.apolis.bltindoor.helper.SampleGattAttributes.OutputStringUtil
 import com.clj.fastble.BleManager
+import com.clj.fastble.callback.BleIndicateCallback
+import com.clj.fastble.callback.BleNotifyCallback
 import com.clj.fastble.callback.BleReadCallback
 import com.clj.fastble.callback.BleWriteCallback
 import com.clj.fastble.data.BleDevice
 import com.clj.fastble.exception.BleException
 import com.clj.fastble.utils.HexUtil
+import java.util.*
 import javax.inject.Inject
 
 class OperationFragment : Fragment() {
@@ -81,10 +84,18 @@ class OperationFragment : Fragment() {
     private fun init() {
         //once the device connect to GATT server and discovered service, we can read and write attributes.
         //pairing device might required.
-        gatt = BleManager.getInstance().getBluetoothGatt(bleDevice)
+        //in native implement, it should be: BluetoothGattCallback gattCallback = new BluetoothGattCallback() {...}
+        //then: gatt =bleDevice.connectGatt(this,true,gattCallback)
+        // which set autoconnect to true
+        //but luckily we don't need to so in fastBle
+
+        gatt = bleManager.getBluetoothGatt(bleDevice)
         //at that time, we can specific
-        bluetoothGattService = gatt.services[0]
+        bluetoothGattService =
+            gatt.services[0]//first service in gatt., we can define here to get specific data.
+        //like HEART_RATE_SERVICE_UUID
         bluetoothGattCharacteristic = bluetoothGattService.characteristics[0]
+        //more datailed in here, like HEART_RATE_CONTROL_POINT_CHAR_UUID
         read()
         val byteArray = byteArrayOf(
             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
@@ -102,7 +113,7 @@ class OperationFragment : Fragment() {
     private fun send(bytes: ByteArray) {
         bleManager.write(
             bleDevice,
-            bluetoothGattCharacteristic.service.uuid.toString(),
+            bluetoothGattCharacteristic.service.uuid.toString(),//when we want to read spefic data like heart rate, change here.
             bluetoothGattCharacteristic.uuid.toString(),
             bytes,
             object : BleWriteCallback() {
@@ -124,6 +135,7 @@ class OperationFragment : Fragment() {
 
             }
         )
+
     }
 
     //send
@@ -174,8 +186,60 @@ class OperationFragment : Fragment() {
 
 
     }
+
     //TODO
     //push notifications by broadcastReceiver when receiving data dynamically
+    //there are two ways of notify, indicate and notify, the differences is:
+    //notify might lose data, but fast.
+    //indicate has wrapped response method, so won't miss data, but slow.
 
+    fun characteristicNotify(uuid_servie: String, uuid_characteristic_notify: String) {
+        bleManager.notify(
+            bleDevice,
+            uuid_servie,//which service specific , like heart rate
+            uuid_characteristic_notify,//which ch
+            object : BleNotifyCallback() {
+                override fun onNotifySuccess() {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onNotifyFailure(exception: BleException?) {
+                    TODO("Not yet implemented")
+                }
+                    //call back when  characteristic changed.
+                override fun onCharacteristicChanged(data: ByteArray?) {
+
+                    TODO("Not yet implemented")
+                }
+
+            }
+
+        )
+        //close notify
+        bleManager.stopNotify(bleDevice, uuid_servie, uuid_characteristic_notify)
+    }
+
+    fun characteristicIndicate(uuid_servie: String, uuid_characteristic_notify: String) {
+        bleManager.indicate( bleDevice,
+            uuid_servie,//which service specific , like heart rate
+            uuid_characteristic_notify,//which ch
+            object : BleIndicateCallback() {
+                override fun onIndicateSuccess() {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onIndicateFailure(exception: BleException?) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onCharacteristicChanged(data: ByteArray?) {
+                    TODO("Not yet implemented")
+                }
+
+            }
+            )
+        //close indicate
+        bleManager.stopIndicate(bleDevice,uuid_servie,uuid_characteristic_notify)
+    }
 
 }

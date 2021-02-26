@@ -13,4 +13,5 @@ import javax.inject.Singleton
 interface AppComponent {
     fun inject(scanViewModel: ScanViewModel)
     fun inject(operationFragment: OperationFragment)
+    fun inject(scanFragment: ScanFragment)
 }

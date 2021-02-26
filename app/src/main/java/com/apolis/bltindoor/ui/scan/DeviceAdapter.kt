@@ -25,9 +25,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         val binding: RowAdapterDeviceBinding
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(bleDevice: BleDevice) {
-//            binding.txtName.text = bleDevice.name
-//            binding.txtMac.text=bleDevice.mac
-//            binding.txtRssi.text=bleDevice.rssi.toString()
+
 
 
         }
@@ -45,20 +43,17 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
     override fun onBindViewHolder(holder: DeviceAdapter.MyViewHolder, position: Int) {
         var device = mList[position]
         holder.binding.device = device
+        holder.binding.device.mac
         holder.binding.txtRssi.text = device.rssi.toString()
         holder.binding.btnConnect.setOnClickListener {
-            viewModel.onConnectDevice(device)
+            parentFragment!!.onConnectDevice(device)
         }
         holder.binding.btnDisconnect.setOnClickListener {
-            viewModel.onDisconnectDevice(device)
+            parentFragment!!.onDisconnectDevice(device)
         }
         holder.binding.btnDetail.setOnClickListener {
-            viewModel.onDetail(device)
-//            onConnectCallListener.onDetailClicked(device)
+            parentFragment!!.onDetail(device)
 
-//            Navigation.findNavController(it).navigate(
-//                R.id.action_scanFragment_to_operationFragment, bundle
-//            )
         }
         holder.binding.executePendingBindings()
     }
