@@ -37,7 +37,7 @@ import javax.inject.Inject
 class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     lateinit var binding: ScanFragmentBinding
 
-
+//set the request code for permission
     companion object {
         fun newInstance() = ScanFragment()
         private const val REQUEST_CODE_OPEN_GPS = 1
@@ -46,16 +46,13 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
 
-//    private val mDeviceAdapter: DeviceAdapter? = null
-//    @Inject
-//    lateinit var bleManager:BleManager
-
+//setup the viewmodel and adapter, set the call back listener
     private lateinit var viewModel: ScanViewModel
     private val viewAdapter = DeviceAdapter().apply {
         parentFragment = this@ScanFragment
         onConnectCallListener= this@ScanFragment
     }
-
+//data binding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -76,14 +73,14 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         init()
 
     }
-
-    fun init() {
+//set up the recycler view for blue tooth device.
+    private fun init() {
         binding.deviceRecyclerView.apply {
             adapter = viewAdapter
             layoutManager = LinearLayoutManager(requireContext())
         }
 
-        //set scan
+        //set scan, before we start, check permission first.
         btn_scan.setOnClickListener {
             checkPermissions()
         }
@@ -91,14 +88,24 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
     fun checkPermissions() {
+
+
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        // check the bluetoothAdapter is enabled or not, if not, print a toast.
+        //without this permission we can't do bluetooth communication
         if (!bluetoothAdapter.isEnabled) {
             Toast.makeText(requireContext(), "please open bluetooth", Toast.LENGTH_LONG).show()
             return
         }
-
+        //request for location permission, without this permission, there will be no result for scan,
+        //because BLE scan has relationship with location  notice: if android version lower than 9,
+        //could declare AccessCoarseLocation.
+        // if declare your application is only support  Ble, declare this on manifest., or set it dynamic in code
+        //<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
         val permissions = arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION)
         val permissionDeniedList: MutableList<String> = ArrayList()
+        //check permission list
         for (permission in permissions) {
             val permissionCheck = ContextCompat.checkSelfPermission(requireContext(), permission)
             if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
@@ -107,6 +114,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
                 permissionDeniedList.add(permission)
             }
         }
+        //if has some permission denied, request permission from user
         if (!permissionDeniedList.isEmpty()) {
             val deniedPermissions = permissionDeniedList.toTypedArray()
             ActivityCompat.requestPermissions(
@@ -116,7 +124,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             )
         }
     }
-
+    //use to request permission by create dialog.
     private fun onPermissionGranted(permission: String) {
         when (permission) {
             Manifest.permission.ACCESS_FINE_LOCATION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkGPSIsOpen()) {
@@ -140,19 +148,21 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
                         })
                     .show()
             } else {
+
+                //after has permissions, set scan rules and start scan.
                 viewModel.setScanRule()
                 viewModel.startScan()
             }
         }
     }
-
+//if not get permission, and user want to open app setting, we can use this one.
     private fun openAppSettings() {
         var intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
         var uri = Uri.fromParts("package", activity?.packageName, null)
         intent.setData(uri)
         startActivityForResult(intent, REQUEST_CODE_OPEN_GPS)
     }
-
+//get the result of open app setting
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_OPEN_GPS) {
@@ -162,7 +172,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             }
         }
     }
-
+//check is Gps open
     private fun checkGPSIsOpen(): Boolean {
         val locationManager =
             requireActivity().getSystemService(Context.LOCATION_SERVICE) as LocationManager?

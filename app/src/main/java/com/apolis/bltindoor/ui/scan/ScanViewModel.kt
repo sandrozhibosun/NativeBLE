@@ -23,14 +23,17 @@ class ScanViewModel : ViewModel() {
     init {
         val component = DaggerAppComponent.create()
         component.inject(this)
+        Log.d("abc","is this device support BLE: "+bleManager.isSupportBle.toString())
 
     }
+    //the device also has mac address, scanRecord, which is a byteArray, that show data when get scanned
 
     var deviceGetListener: DeviceGetListener? = null
     var deviceCallbackListener: DeviceCallbackListener? = null
 
     // TODO: Implement the ViewModel
     fun setScanRule() {
+        //set timeout, because scan is battery-intensive
         val scanRuleConfig = BleScanRuleConfig.Builder()
             .setScanTimeOut(10000) //
             .build()
@@ -38,6 +41,7 @@ class ScanViewModel : ViewModel() {
     }
 
     fun startScan() {
+        //might optimize as livedata later.
 //        var res=MutableLiveData<ArrayList<BleDevice>>()
 //        var temp=ArrayList<BleDevice>()
         bleManager.scan(object : BleScanCallback() {
@@ -47,13 +51,13 @@ class ScanViewModel : ViewModel() {
 //                mDeviceAdapter.clearScanDevice()
 //                mDeviceAdapter.notifyDataSetChanged()
 
-//                btn_scan.setText("stop scan")
             }
-
+            //only scan for BLE device
             override fun onLeScan(bleDevice: BleDevice) {
                 super.onLeScan(bleDevice)
             }
-
+            //scan for all blue tooth device
+            //native android sdk didn't support scan ble or classic bluetooth together
             override fun onScanning(bleDevice: BleDevice) {
                 deviceGetListener!!.onGet(bleDevice)
                 Log.d("abc", "scan 1")
@@ -62,18 +66,22 @@ class ScanViewModel : ViewModel() {
 //                mDeviceAdapter.addDevice(bleDevice)
 //                mDeviceAdapter.notifyDataSetChanged()
             }
-
             override fun onScanFinished(scanResultList: List<BleDevice>) {
 
-//                btn_scan.setText("start scan")
             }
         })
 
-
 //        deviceGetListener!!.onGet(res)
     }
-
+    //connect method, wrap the android bluetoothGatt in connect method, you can see it in source code
+    //in android native implement, we take a device to connect Gatt, like
+    //var bluetoothGatt: BluetoothGatt? = null
+    //...
+    //bluetoothGatt = device.connectGatt(this, false, gattCallback)
+    //we can perform operation on the Gatt client, and the BluetoothGattCallback is used the deliver results to client.
+    //notice one BLE can only have one central device., once it connect, it will stop broadcast to other device.
     fun onConnectDevice(bleDevice: BleDevice) {
+        //stop scan after find device, because scan is battery-intensive
         if (!bleManager.isConnected(bleDevice)) {
             bleManager.cancelScan()
         }
@@ -105,6 +113,7 @@ class ScanViewModel : ViewModel() {
                 gatt: BluetoothGatt?,
                 status: Int
             ) {
+
                 if (isActiveDisConnected) {
                     Log.d("abc", "is active disconnect")
                 } else {
@@ -127,7 +136,7 @@ class ScanViewModel : ViewModel() {
         }
     }
 
-
+    //the strength of signal, the number is less, the signal is better.
     private fun readRssi(bleDevice: BleDevice) {
         bleManager.readRssi(bleDevice, object : BleRssiCallback() {
             override fun onRssiFailure(exception: BleException) {
@@ -139,7 +148,8 @@ class ScanViewModel : ViewModel() {
             }
         })
     }
-
+    // Max transfer Unit, we can change the value to set more than 20 byte situation
+    //actually native max package is 20n byte one time, by set this, we will divide the page .
     private fun setMtu(bleDevice: BleDevice, mtu: Int) {
         bleManager.setMtu(bleDevice, mtu, object : BleMtuChangedCallback() {
             override fun onSetMTUFailure(exception: BleException) {
@@ -150,6 +160,13 @@ class ScanViewModel : ViewModel() {
                 Log.d("abc", "onMtuChanged: $mtu")
             }
         })
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+
+        bleManager.disconnectAllDevice()
+        bleManager.destroy()
     }
 
 }

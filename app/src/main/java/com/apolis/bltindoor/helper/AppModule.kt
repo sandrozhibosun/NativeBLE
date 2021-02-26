@@ -17,8 +17,11 @@ class BLEManagerModule {
         //configuration of ble manager
         bleManager.enableLog(true)
             .setMaxConnectCount(10)
-            .setOperateTimeout(5000)
 
+            .setOperateTimeout(5000)
+//also android has native bluetooth manager , and init like
+// val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+// val bluetoothAdapter = bluetoothManager.adapter
 
         return bleManager
     }
