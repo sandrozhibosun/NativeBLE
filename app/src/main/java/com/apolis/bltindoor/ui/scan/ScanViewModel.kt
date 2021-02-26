@@ -17,13 +17,20 @@ import javax.inject.Inject
 
 
 class ScanViewModel : ViewModel() {
-    @Inject
+
+    @Inject//ble manager
     lateinit var bleManager: BleManager
 
+    /*
+    1.BLE: Android built-in platform to discover devices, request and transmit information from our bluetooth device.
+    2.GATT: Generic Attribute Profile to define how to exchange data using predefined attributes.
+    3.Central: the Computer/Tablet/Mobile device, also referred as GATT client. Scans, requests and uses the data given by the peripheral.
+    4.Peripheral: the device broadcasting the data, also referred as GATT server. The data is structured as definitions of how to interact with it’s ‘database’.
+     */
     init {
         val component = DaggerAppComponent.create()
         component.inject(this)
-        Log.d("abc","is this device support BLE: "+bleManager.isSupportBle.toString())
+        Log.d("abc", "is this device support BLE: " + bleManager.isSupportBle.toString())
 
     }
     //the device also has mac address, scanRecord, which is a byteArray, that show data when get scanned
@@ -52,10 +59,12 @@ class ScanViewModel : ViewModel() {
 //                mDeviceAdapter.notifyDataSetChanged()
 
             }
+
             //only scan for BLE device
             override fun onLeScan(bleDevice: BleDevice) {
                 super.onLeScan(bleDevice)
             }
+
             //scan for all blue tooth device
             //native android sdk didn't support scan ble or classic bluetooth together
             override fun onScanning(bleDevice: BleDevice) {
@@ -66,6 +75,7 @@ class ScanViewModel : ViewModel() {
 //                mDeviceAdapter.addDevice(bleDevice)
 //                mDeviceAdapter.notifyDataSetChanged()
             }
+
             override fun onScanFinished(scanResultList: List<BleDevice>) {
 
             }
@@ -73,6 +83,7 @@ class ScanViewModel : ViewModel() {
 
 //        deviceGetListener!!.onGet(res)
     }
+
     //connect method, wrap the android bluetoothGatt in connect method, you can see it in source code
     //in android native implement, we take a device to connect Gatt, like
     //var bluetoothGatt: BluetoothGatt? = null
@@ -148,6 +159,7 @@ class ScanViewModel : ViewModel() {
             }
         })
     }
+
     // Max transfer Unit, we can change the value to set more than 20 byte situation
     //actually native max package is 20n byte one time, by set this, we will divide the page .
     private fun setMtu(bleDevice: BleDevice, mtu: Int) {
