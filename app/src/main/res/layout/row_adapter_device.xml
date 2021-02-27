@@ -4,7 +4,7 @@
     <data>
         <variable
             name="device"
-            type="com.clj.fastble.data.BleDevice" />
+            type="android.bluetooth.BluetoothDevice" />
     </data>
 
     <LinearLayout
@@ -44,7 +44,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="@{device.mac}"
+                    android:text="@{device.address}"
                     android:textSize="12sp" />
 
             </LinearLayout>

@@ -1,5 +1,6 @@
 package com.apolis.bltindoor.ui.scan
 
+import android.bluetooth.BluetoothDevice
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,10 +13,10 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.apolis.bltindoor.R
 import com.apolis.bltindoor.databinding.RowAdapterDeviceBinding
-import com.clj.fastble.data.BleDevice
+
 
 class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), DeviceCallbackListener {
-    private var mList = ArrayList<BleDevice>()
+    private var mList = ArrayList<BluetoothDevice>()
     var parentFragment: ScanFragment? = null
 
     lateinit var viewModel: ScanViewModel
@@ -24,7 +25,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
     inner class MyViewHolder(
         val binding: RowAdapterDeviceBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(bleDevice: BleDevice) {
+        fun bind(bleDevice: BluetoothDevice) {
 
 
 
@@ -43,7 +44,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
     override fun onBindViewHolder(holder: DeviceAdapter.MyViewHolder, position: Int) {
         var device = mList[position]
         holder.binding.device = device
-        holder.binding.txtRssi.text = device.rssi.toString()
+
         holder.binding.btnConnect.setOnClickListener {
             parentFragment!!.onConnectDevice(device)
         }
@@ -61,7 +62,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         return mList.size
     }
 
-    fun addDevice(bleDevice: BleDevice) {
+    fun addDevice(bleDevice: BluetoothDevice) {
         mList.add(bleDevice)
         notifyDataSetChanged()
         Log.d("abc", "adapter size ${mList.size}")
@@ -72,7 +73,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         notifyDataSetChanged()
     }
 
-    fun setDevice(deviceList: ArrayList<BleDevice>) {
+    fun setDevice(deviceList: ArrayList<BluetoothDevice>) {
         mList = deviceList
         notifyDataSetChanged()
     }
@@ -85,7 +86,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         TODO("Not yet implemented")
     }
 
-    override fun onDetailCallBack(message: String,bleDevice: BleDevice?) {
+    override fun onDetailCallBack(message: String,bleDevice: BluetoothDevice?) {
 
         Toast.makeText(parentFragment!!.requireContext(), message, Toast.LENGTH_SHORT).show()
         if(bleDevice!=null){

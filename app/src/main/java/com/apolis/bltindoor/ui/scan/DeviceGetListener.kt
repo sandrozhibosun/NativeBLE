@@ -1,9 +1,10 @@
 package com.apolis.bltindoor.ui.scan
 
+import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.LiveData
-import com.clj.fastble.data.BleDevice
+
 
 interface DeviceGetListener {
-    fun onGet(bleDevice: BleDevice)
+    fun onGet(bleDevice: BluetoothDevice)
     fun onClear()
 }

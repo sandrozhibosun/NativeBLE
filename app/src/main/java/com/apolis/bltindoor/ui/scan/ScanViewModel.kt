@@ -4,14 +4,6 @@ import android.bluetooth.BluetoothGatt
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.apolis.bltindoor.helper.DaggerAppComponent
-import com.clj.fastble.BleManager
-import com.clj.fastble.callback.BleGattCallback
-import com.clj.fastble.callback.BleMtuChangedCallback
-import com.clj.fastble.callback.BleRssiCallback
-import com.clj.fastble.callback.BleScanCallback
-import com.clj.fastble.data.BleDevice
-import com.clj.fastble.exception.BleException
-import com.clj.fastble.scan.BleScanRuleConfig
 import kotlinx.android.synthetic.main.scan_fragment.*
 import javax.inject.Inject
 

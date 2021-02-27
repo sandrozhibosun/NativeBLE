@@ -6,16 +6,33 @@
     android:layout_height="match_parent"
     tools:context=".ui.scan.ScanFragment">
 
-    <Button
-        android:id="@+id/btn_scan"
+    <LinearLayout
+        android:id="@+id/topLinear"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_centerInParent="true"
-        android:text="start scan"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_weight="0" />
+        app:layout_constraintVertical_weight="0"
+        android:orientation="vertical">
+        <Button
+            android:id="@+id/btn_scan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="start scan"
+             />
+        <Button
+            android:id="@+id/btn_stop_scan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="stop scan"
+             />
+
+    </LinearLayout>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/device_recycler_view"
@@ -25,7 +42,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_scan"
-        app:layout_constraintVertical_weight="1" />
+        app:layout_constraintTop_toBottomOf="@+id/topLinear"
+        app:layout_constraintVertical_weight="2" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

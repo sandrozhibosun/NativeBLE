@@ -4,7 +4,7 @@ import com.apolis.bltindoor.ui.operation.OperationFragment
 import com.apolis.bltindoor.ui.operation.OperationViewModel
 import com.apolis.bltindoor.ui.scan.ScanFragment
 import com.apolis.bltindoor.ui.scan.ScanViewModel
-import com.clj.fastble.BleManager
+
 import dagger.Component
 import javax.inject.Singleton
 

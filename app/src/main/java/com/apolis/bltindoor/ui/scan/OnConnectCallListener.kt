@@ -1,7 +1,8 @@
 package com.apolis.bltindoor.ui.scan
 
-import com.clj.fastble.data.BleDevice
+import android.bluetooth.BluetoothDevice
+
 
 interface OnConnectCallListener {
-    fun onDetailClicked(bleDevice: BleDevice)
+    fun onDetailClicked(bleDevice:BluetoothDevice)
 }

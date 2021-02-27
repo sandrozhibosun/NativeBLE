@@ -3,39 +3,32 @@ package com.apolis.bltindoor.ui.scan
 import android.Manifest
 import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothGatt
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.content.*
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.apolis.bltindoor.R
+import com.apolis.bltindoor.app.Const
 import com.apolis.bltindoor.databinding.ScanFragmentBinding
 import com.apolis.bltindoor.helper.DaggerAppComponent
-import com.clj.fastble.BleManager
-import com.clj.fastble.callback.BleGattCallback
-import com.clj.fastble.callback.BleMtuChangedCallback
-import com.clj.fastble.callback.BleRssiCallback
-import com.clj.fastble.callback.BleScanCallback
-import com.clj.fastble.data.BleDevice
-import com.clj.fastble.exception.BleException
-import com.clj.fastble.scan.BleScanRuleConfig
 import kotlinx.android.synthetic.main.scan_fragment.*
 import javax.inject.Inject
 
@@ -43,14 +36,37 @@ import javax.inject.Inject
 class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     lateinit var binding: ScanFragmentBinding
 
-    @Inject//ble manager
-    lateinit var bleManager: BleManager
+    @Inject//bluetooth adapter
+    lateinit var bluetoothAdapter: BluetoothAdapter
+    private var handler = Handler()
+    private var mScanning = false
+
+    val gattUpdateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            val action = intent.action
+            if (Const.ACTION_GATT_CONNECTED.equals(action)) {
+                Toast.makeText(requireContext(), "Device Connected", Toast.LENGTH_SHORT).show()
+            } else if (Const.ACTION_GATT_DISCONNECTED.equals(action)) {
+                Toast.makeText(requireContext(), "Device DisConnected", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun makeGattUpdateIntentFilter(): IntentFilter? {
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(Const.ACTION_GATT_CONNECTED)
+        intentFilter.addAction(Const.ACTION_GATT_DISCONNECTED)
+        intentFilter.addAction(Const.ACTION_GATT_SERVICES_DISCOVERED)
+        intentFilter.addAction(Const.ACTION_DATA_AVAILABLE)
+        return intentFilter
+    }
 
     //set the request code for permission
     companion object {
-        fun newInstance() = ScanFragment()
+        val Tag = ScanFragment::class.simpleName
         private const val REQUEST_CODE_OPEN_GPS = 1
         private const val REQUEST_CODE_PERMISSION_LOCATION = 2
+        private const val SCAN_PERIOD: Long = 1000
 
     }
 
@@ -60,6 +76,14 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     private val viewAdapter = DeviceAdapter().apply {
         parentFragment = this@ScanFragment
         onConnectCallListener = this@ScanFragment
+    }
+    var bluetoothService: BlueToothLeService? = null
+    var scanCallback = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            this@ScanFragment.onGet(result!!.device)
+        }
+
     }
 
     //data binding
@@ -75,6 +99,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(ScanViewModel::class.java)
@@ -82,12 +107,13 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         viewModel.deviceGetListener = this
         val component = DaggerAppComponent.create()
         component.inject(this)
-        Log.d("abc", "is this device support BLE: " + bleManager.isSupportBle.toString())
+        requireActivity().registerReceiver(gattUpdateReceiver, makeGattUpdateIntentFilter())
         init()
 
     }
 
     //set up the recycler view for blue tooth device.
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun init() {
         binding.deviceRecyclerView.apply {
             adapter = viewAdapter
@@ -98,153 +124,106 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         btn_scan.setOnClickListener {
             checkPermissions()
         }
-
-    }
-
-    fun setScanRule() {
-        //set timeout, because scan is battery-intensive
-        val scanRuleConfig = BleScanRuleConfig.Builder()
-            .setScanTimeOut(10000) //
-            .build()
-        bleManager.initScanRule(scanRuleConfig)
-    }
-
-    fun startScan() {
-        //might optimize as livedata later.
-//        var res=MutableLiveData<ArrayList<BleDevice>>()
-//        var temp=ArrayList<BleDevice>()
-
-        bleManager.scan(object : BleScanCallback() {
-            override fun onScanStarted(success: Boolean) {
-                this@ScanFragment.onClear()
-//                res.postValue(temp)
-//                mDeviceAdapter.clearScanDevice()
-//                mDeviceAdapter.notifyDataSetChanged()
-
-            }
-
-            //only scan for BLE device
-            override fun onLeScan(bleDevice: BleDevice) {
-                super.onLeScan(bleDevice)
-            }
-
-            //scan for all blue tooth device
-            //native android sdk didn't support scan ble or classic bluetooth together
-            override fun onScanning(bleDevice: BleDevice) {
-                this@ScanFragment.onGet(bleDevice)
-                Log.d("abc", "scan 1")
-                //if we want to auto connect to a specifc sensor, first we need to find the specific sensor address on vendor info
-                //then we can auto connect it by call the connect function.
-                //like:
-                // if(bledevice.device.address == target_SENSOR_ADDRESS){//because bluetoothdevice is wrapped in bleDevice
-                //    blemanager.onConnectDevice(bleDevoce:bleDevice)
-//                res.postValue(temp)
-//                mDeviceAdapter.addDevice(bleDevice)
-//                mDeviceAdapter.notifyDataSetChanged()
-            }
-
-            override fun onScanFinished(scanResultList: List<BleDevice>) {
-
-            }
-        })
-    }
-
-    fun onConnectDevice(bleDevice: BleDevice) {
-
-        //stop scan after find device, because scan is battery-intensive
-        if (!bleManager.isConnected(bleDevice)) {
-            bleManager.cancelScan()
+        btn_stop_scan.setOnClickListener {
+            startLEScan(false)
         }
-        bleManager.connect(bleDevice, object : BleGattCallback() {
-            override fun onStartConnect() {
-                Log.d("abc", "start connect")
+
+    }
+
+    //first step of implementing ble
+    //Scan for device by GAP protocol, here we can add a filter
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun startLEScan(enable: Boolean) {
+        //we can declared filter and scan setting here, eg:
+        /*
+        val uuid =ParcelUuid(ServiceUUID)
+        val filter=ScanFilter.Builder().setServiceUuid(uuid).build
+        val filters=listof(filter)
+
+        val settings=ScanSettings
+        .Builder()
+        .setScanMode(ScanSettings.Scan_Mode_LOW_LATENCY)
+        .build()
+
+         */
+
+        when (enable) {//use handler here to set time out
+            true -> {
+                viewAdapter.clearScanDevice()
+                //if we want to scan specific device , we can define UUID as arguement, like:
+                //startLeScan(UUID[], BluetoothAdapter.LeScanCallback)
+                handler.postDelayed({
+                    mScanning = false
+                    bluetoothAdapter.bluetoothLeScanner.stopScan(
+                        scanCallback
+                    )
+                }, SCAN_PERIOD)//end postDelayed
+                mScanning = true
+                bluetoothAdapter.bluetoothLeScanner.startScan(// filter defined here
+                    scanCallback
+                )
+            }//end true
+            else -> {
+                mScanning = false
+                bluetoothAdapter.bluetoothLeScanner.stopScan(
+                    scanCallback
+                )//end stop scan
             }
 
-            override fun onConnectFail(exception: BleException?) {
-                Log.d("abc", "connect fail")
-                Log.d("abc", exception.toString())
+        }
+    }
 
-            }
+    fun onConnectDevice(bleDevice: BluetoothDevice) {
 
-            override fun onConnectSuccess(//device 78:20:7b could connect
-                bleDevice: BleDevice?,
-                gatt: BluetoothGatt?,
-                status: Int
-            ) {
+        //start this bind service, which is BlueToothLeService for connecting
 
-                Log.d("abc", "connect success")
-                readRssi(bleDevice!!)
-                setMtu(bleDevice!!, 23)
+        val serviceConnection =
+            object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                    bluetoothService = (service as BlueToothLeService.LocalBinder).getService()
+                    bluetoothService!!.bluetoothDevice = bleDevice
+                    //here call service.connect
+                    bluetoothService!!.connect()
+                }
 
-            }
-
-            override fun onDisConnected(
-                isActiveDisConnected: Boolean,
-                device: BleDevice?,
-                gatt: BluetoothGatt?,
-                status: Int
-            ) {
-
-                if (isActiveDisConnected) {
-                    Log.d("abc", "is active disconnect")
-                } else {
-                    Log.d("abc", "dis connect and didn't active")
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    bluetoothService = null
                 }
             }
+        Intent(requireActivity(), BlueToothLeService::class.java)
+            .also {
+                Log.d("abc", "start Intent")
+                requireActivity().bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
+            }
 
-        })
     }
 
-    fun onDisconnectDevice(bleDevice: BleDevice) {
-        bleManager.disconnect(bleDevice)
-    }
-
-    fun onDetail(bleDevice: BleDevice) {
-        if (bleManager.isConnected(bleDevice)) {
-            viewModel.deviceCallbackListener!!.onDetailCallBack(
-                "this is connected device",
-                bleDevice
-            )
-        } else {
-            viewModel.deviceCallbackListener!!.onDetailCallBack(
-                "this device didn't connected",
-                null
-            )
+    fun onDisconnectDevice(bleDevice: BluetoothDevice) {
+        if (bluetoothService == null || bluetoothService!!.bluetoothDevice != bleDevice) {
+            Toast.makeText(requireContext(), "this device didn't connected", Toast.LENGTH_SHORT)
+                .show()
+            return
         }
+        bluetoothService!!.disconnect()
     }
 
-    //the strength of signal, the number is less, the signal is better.
-    private fun readRssi(bleDevice: BleDevice) {
-        bleManager.readRssi(bleDevice, object : BleRssiCallback() {
-            override fun onRssiFailure(exception: BleException) {
-                Log.d("abc", "onRssiFailure$exception")
-            }
+    fun onDetail(bleDevice: BluetoothDevice) {
+        if (bluetoothService == null || bluetoothService!!.bluetoothDevice != bleDevice) {
 
-            override fun onRssiSuccess(rssi: Int) {
-                Log.d("abc", "onRssiSuccess: $rssi")
-            }
-        })
-    }
+            Toast.makeText(requireContext(), "this device didn't connected", Toast.LENGTH_SHORT)
+                .show()
+            return
+        } else viewModel.deviceCallbackListener!!.onDetailCallBack(
+            "this is connected device",
+            bleDevice
+        )
 
-    // Max transfer Unit, we can change the value to set more than 20 byte situation
-    //actually native max package is 20n byte one time, by set this, we will divide the page .
-    private fun setMtu(bleDevice: BleDevice, mtu: Int) {
-        bleManager.setMtu(bleDevice, mtu, object : BleMtuChangedCallback() {
-            override fun onSetMTUFailure(exception: BleException) {
-                Log.d("abc", "onsetMTUFailure$exception")
-            }
-
-            override fun onMtuChanged(mtu: Int) {
-                Log.d("abc", "onMtuChanged: $mtu")
-            }
-        })
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun checkPermissions() {
 
-
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
         // check the bluetoothAdapter is enabled or not, if not, print a toast.
         //without this permission we can't do bluetooth communication
@@ -252,11 +231,14 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             Toast.makeText(requireContext(), "please open bluetooth", Toast.LENGTH_LONG).show()
             return
         }
-        //request for location permission, without this permission, there will be no result for scan,
-        //because BLE scan has relationship with location  notice: if android version lower than 9,
-        //could declare AccessCoarseLocation.
-        // if declare your application is only support  Ble, declare this on manifest., or set it dynamic in code
-        //<uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+        /**
+        request for location permission. without this permission, there will be no result for scan,
+        because BLE scan has relationship with location  notice: if android version lower than 9,
+        could declare AccessCoarseLocation.
+        if declare your application is only support  Ble, declare this on manifest., or set it dynamic in code:
+        <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+         */
+
         val permissions = arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION)
         val permissionDeniedList: MutableList<String> = ArrayList()
         //check permission list
@@ -280,6 +262,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
     //use to request permission by create dialog.
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun onPermissionGranted(permission: String) {
         when (permission) {
             Manifest.permission.ACCESS_FINE_LOCATION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkGPSIsOpen()) {
@@ -305,8 +288,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             } else {
 
                 //after has permissions, set scan rules and start scan.
-                setScanRule()
-                 startScan()
+                startLEScan(true)
             }
         }
     }
@@ -320,12 +302,12 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
     //get the result of open app setting
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_OPEN_GPS) {
             if (checkGPSIsOpen()) {
-                setScanRule()
-                startScan()
+                startLEScan(true)
             }
         }
     }
@@ -337,7 +319,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         return locationManager != null && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
 
-    override fun onGet(bleDevice: BleDevice) {
+    override fun onGet(bleDevice: BluetoothDevice) {
 //        deviceLiveData.observe(viewLifecycleOwner,{
 //            viewAdapter.setDevice(it)
 //        })
@@ -348,7 +330,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         viewAdapter.clearScanDevice()
     }
 
-    override fun onDetailClicked(bleDevice: BleDevice) {
+    override fun onDetailClicked(bleDevice: BluetoothDevice) {
 //        var bundle = Bundle()
 //        bundle.putParcelable("device", bleDevice)
 //
@@ -358,11 +340,8 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     }
 
     override fun onDestroy() {
-        bleManager.disconnectAllDevice()
-        bleManager.destroy()
         super.onDestroy()
     }
-    //from start to here is for ask bluetooth and location permissions. now set scan rules and start scan
 
 
 }

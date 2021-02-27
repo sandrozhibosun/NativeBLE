@@ -1,9 +1,10 @@
 package com.apolis.bltindoor.ui.scan
 
-import com.clj.fastble.data.BleDevice
+import android.bluetooth.BluetoothDevice
+
 
 interface DeviceCallbackListener {
     fun onConnectCallback()
     fun onDisconnectCallBack()
-    fun onDetailCallBack(message:String,bleDevice: BleDevice?)
+    fun onDetailCallBack(message:String,bleDevice:BluetoothDevice?)
 }
