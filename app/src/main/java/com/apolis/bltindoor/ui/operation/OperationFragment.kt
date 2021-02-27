@@ -187,7 +187,7 @@ class OperationFragment : Fragment() {
 
     }
 
-    //TODO
+
     //push notifications by broadcastReceiver when receiving data dynamically
     //there are two ways of notify, indicate and notify, the differences is:
     //notify might lose data, but fast.

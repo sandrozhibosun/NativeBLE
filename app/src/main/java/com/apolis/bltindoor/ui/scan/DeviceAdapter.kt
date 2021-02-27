@@ -43,7 +43,6 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
     override fun onBindViewHolder(holder: DeviceAdapter.MyViewHolder, position: Int) {
         var device = mList[position]
         holder.binding.device = device
-        holder.binding.device.mac
         holder.binding.txtRssi.text = device.rssi.toString()
         holder.binding.btnConnect.setOnClickListener {
             parentFragment!!.onConnectDevice(device)
