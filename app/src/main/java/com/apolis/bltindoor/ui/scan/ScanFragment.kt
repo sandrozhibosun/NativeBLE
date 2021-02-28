@@ -29,7 +29,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.apolis.bltindoor.app.Const
 import com.apolis.bltindoor.databinding.ScanFragmentBinding
 import com.apolis.bltindoor.helper.DaggerAppComponent
-import kotlinx.android.synthetic.main.scan_fragment.*
+
 import javax.inject.Inject
 
 
@@ -81,6 +81,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     var scanCallback = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            //add to recycler view
             this@ScanFragment.onGet(result!!.device)
         }
 
@@ -121,10 +122,10 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         }
 
         //set scan, before we start, check permission first.
-        btn_scan.setOnClickListener {
+        binding.btnScan.setOnClickListener {
             checkPermissions()
         }
-        btn_stop_scan.setOnClickListener {
+        binding.btnStopScan.setOnClickListener {
             startLEScan(false)
         }
 
@@ -132,6 +133,8 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
 
     //first step of implementing ble
     //Scan for device by GAP protocol, here we can add a filter
+    // From API 19 and up you can start the pairing by calling the mBluetoothDevice.createBond().
+    // You don't need to be connected with the remote BLE device to start the pairing process.
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun startLEScan(enable: Boolean) {
         //we can declared filter and scan setting here, eg:
@@ -144,7 +147,6 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         .Builder()
         .setScanMode(ScanSettings.Scan_Mode_LOW_LATENCY)
         .build()
-
          */
 
         when (enable) {//use handler here to set time out

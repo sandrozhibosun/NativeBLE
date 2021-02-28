@@ -13,5 +13,9 @@ class Const {
         const val STATE_DISCONNECTED = 0
         const val STATE_CONNECTING = 1
         const val STATE_CONNECTED = 2
+        const val SENSOR_TAG_DEVICE_NAME = "SensorTag"
+        const val ACTION_RESPONSE_TO_CLIENT =
+            "ACTION_RESPONSE_TO_CLIENT";
+
     }
 }

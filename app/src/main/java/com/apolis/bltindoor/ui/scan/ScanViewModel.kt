@@ -4,7 +4,7 @@ import android.bluetooth.BluetoothGatt
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.apolis.bltindoor.helper.DaggerAppComponent
-import kotlinx.android.synthetic.main.scan_fragment.*
+
 import javax.inject.Inject
 
 

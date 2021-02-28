@@ -8,6 +8,9 @@ public class SampleGattAttributes {
     public static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
     public static String Battery_Service="0000180f-0000-1000-8000-00805f9b34fb";
     public static String Battery_Level="00002a19-0000-1000-8000-00805f9b34fb";
+    public static String TiAccelerometerService="f000aa10-0451-4000-b000-000000000000";
+    public static String TiAccelerometerData="f000aa10-0451-4000-b000-000000000000";
+
     //
 
     static {

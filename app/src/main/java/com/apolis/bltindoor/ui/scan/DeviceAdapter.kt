@@ -92,6 +92,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
         if(bleDevice!=null){
         var bundle = Bundle()
         bundle.putParcelable("device", bleDevice)
+
         Navigation.findNavController(parentFragment!!.requireView())
             .navigate(R.id.scanFragment_to_operationFragment,bundle)
         }

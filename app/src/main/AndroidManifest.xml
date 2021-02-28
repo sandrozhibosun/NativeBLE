@@ -18,7 +18,9 @@
         <service
             android:name=".ui.scan.BlueToothLeService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true">
+
+        </service>
 
         <activity android:name=".ui.MainActivity">
             <intent-filter>
