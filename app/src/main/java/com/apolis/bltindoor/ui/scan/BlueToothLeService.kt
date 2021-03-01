@@ -88,6 +88,7 @@ class BlueToothLeService : Service() {
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+
                 broadcastUpdate(Const.ACTION_GATT_SERVICES_DISCOVERED, null)
                 Log.d(TAG, "onServicesDiscovered received: $status")
             } else {
@@ -99,6 +100,7 @@ class BlueToothLeService : Service() {
 //            val characteristic = gatt?.getService(batteryService)?.getCharacteristic(
 //                UUID.fromString(SampleGattAttributes.Battery_Level)
 //            )
+            //get service here
             val service = gatt?.getService(temperatureService)
             if (service == null) {
                 Log.d(TAG, "service didn't detected: ${temperatureService}")
@@ -143,7 +145,6 @@ class BlueToothLeService : Service() {
             super.onCharacteristicWrite(gatt, characteristic, status)
             // we can define several encryption algorithm in android key store.
 
-
         }
 
 
@@ -156,12 +157,11 @@ class BlueToothLeService : Service() {
                 return
             }
             super.onCharacteristicChanged(gatt, characteristic)
-            characteristic?.let {
+            characteristic.let {
                 //can send a broadcast
 //                val batteryLevel = characteristic.value[0].toInt()
                 //or we can output by log
 //                Log.d(TAG, "Battery Level is :$batteryLevel")
-
                 broadcastUpdate(Const.ACTION_DATA_AVAILABLE, it)
             }
         }
@@ -181,7 +181,7 @@ class BlueToothLeService : Service() {
         we use gatt client to implement gatt protocol communication
          */
         bluetoothGatt =
-            bluetoothDevice.connectGatt(this, false, gattCallBack)//predefined gattCallback
+            bluetoothDevice.connectGatt(this, true, gattCallBack)//predefined gattCallback
         Log.d(TAG, "connected")
         /* if we already have a specific device mac address to connect,  we can pass it as a parameter,
         and call like: val device=bluetoothAdapter.getRemoteDevice(macAddress) to get the device from
@@ -287,7 +287,7 @@ class BlueToothLeService : Service() {
     ) {
         val intent = Intent(action)
         /**
-         *   // This is special handling for the T1 sensor temperature.  Data parsing is
+         *  This is special handling for the T1 sensor temperature.  Data parsing is
         // carried out as per profile specifications:
         // http://developer.bluetooth.org
          */
@@ -309,7 +309,7 @@ class BlueToothLeService : Service() {
 //                    Log.d(TAG, "temperature format SINT16.")
 //                } else {
 //                    format = BluetoothGattCharacteristic.FORMAT_SINT32
-//                    Log.d(TAG, "temperature format SINT16.")
+//                    Log.d(TAG, "temperature format SINT32.")
 //                }
 //                var format=-1
 

@@ -15,11 +15,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BLTIndoor">
+
         <service
             android:name=".ui.scan.BlueToothLeService"
             android:enabled="true"
             android:exported="true">
-
         </service>
 
         <activity android:name=".ui.MainActivity">

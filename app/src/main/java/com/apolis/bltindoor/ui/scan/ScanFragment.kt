@@ -48,7 +48,16 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
                 Toast.makeText(requireContext(), "Device Connected", Toast.LENGTH_SHORT).show()
             } else if (Const.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Toast.makeText(requireContext(), "Device DisConnected", Toast.LENGTH_SHORT).show()
+            } else if (Const.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+                Toast.makeText(requireContext(), "Discover Services", Toast.LENGTH_SHORT).show()
+            } else if (Const.ACTION_DATA_AVAILABLE.equals(action)) {
+                Toast.makeText(
+                    requireContext(),
+                    intent.getStringExtra(Const.EXTRA_DATA),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
+
         }
     }
 
@@ -66,7 +75,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         val Tag = ScanFragment::class.simpleName
         private const val REQUEST_CODE_OPEN_GPS = 1
         private const val REQUEST_CODE_PERMISSION_LOCATION = 2
-        private const val SCAN_PERIOD: Long = 1000
+        private const val SCAN_PERIOD: Long = 10000
 
     }
 
@@ -150,6 +159,11 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         .build()
          */
 
+        /**
+         * ble Advertising to broadcast data packages to all nearby devices without having to establish a connection first.
+         * but ble advertising not support every device
+         */
+
         when (enable) {//use handler here to set time out
             true -> {
                 viewAdapter.clearScanDevice()
@@ -160,11 +174,12 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
                     bluetoothAdapter.bluetoothLeScanner.stopScan(
                         scanCallback
                     )
-                }, SCAN_PERIOD)//end postDelayed
+                }, SCAN_PERIOD)//end postDelayed 10s time out
                 mScanning = true
                 bluetoothAdapter.bluetoothLeScanner.startScan(// filter defined here
                     scanCallback
                 )
+
             }//end true
             else -> {
                 mScanning = false

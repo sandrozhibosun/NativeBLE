@@ -44,7 +44,7 @@ class DeviceAdapter : RecyclerView.Adapter<DeviceAdapter.MyViewHolder>(), Device
     override fun onBindViewHolder(holder: DeviceAdapter.MyViewHolder, position: Int) {
         var device = mList[position]
         holder.binding.device = device
-
+        //bind device to layout
         holder.binding.btnConnect.setOnClickListener {
             parentFragment!!.onConnectDevice(device)
         }
