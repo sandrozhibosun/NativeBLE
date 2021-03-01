@@ -38,17 +38,15 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
                 Log.d(
                     TAG,
                     String.format(
-                        "1.onConnectionStateChange：device name = %s, address = %s",
-                        device.name,
-                        device.address
+                        "1.onConnectionStateChange：device name = ${device.name}, address = ${device.address}",
+
                     )
                 )
                 Log.d(
                     TAG,
                     String.format(
-                        "1.onConnectionStateChange：status = %s, newState =%s ",
-                        status,
-                        newState
+                        "1.onConnectionStateChange：status = ${status}, newState =${newState} ",
+
                     )
                 )
                 super.onConnectionStateChange(device, status, newState)

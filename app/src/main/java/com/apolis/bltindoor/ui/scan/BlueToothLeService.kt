@@ -39,22 +39,22 @@ class BlueToothLeService : Service() {
     //    lateinit var deviceAddress: String
     //basically it's a connection between client device and server device.
     var bluetoothGatt: BluetoothGatt? = null
-    val batteryService = UUID.fromString(SampleGattAttributes.Battery_Service)
+//    val batteryService = UUID.fromString(SampleGattAttributes.Battery_Service)
 
     //
     val temperatureService = UUID.fromString(SampleGattAttributes.TiTemperatureService)
-    val temperatureData = UUID.fromString(SampleGattAttributes.TiTemperatureData)
+    val temperatureData: UUID = UUID.fromString(SampleGattAttributes.TiTemperatureData)
 
-    val accelerometerService = UUID.fromString(SampleGattAttributes.TiAccelerometerService)
-    val accelerometerData = UUID.fromString(SampleGattAttributes.TiAccelerometerData)
+//    val accelerometerService = UUID.fromString(SampleGattAttributes.TiAccelerometerService)
+//    val accelerometerData = UUID.fromString(SampleGattAttributes.TiAccelerometerData)
 
     private var mConnectionState = Const.STATE_DISCONNECTED
 
     val uuid_target_attritubes = ""
 
-    val gattServerCallback = object : BluetoothGattServerCallback() {
-
-    }
+//    val gattServerCallback = object : BluetoothGattServerCallback() {
+//
+//    }
 
     val gattCallBack = object : BluetoothGattCallback() {
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -157,6 +157,7 @@ class BlueToothLeService : Service() {
                 return
             }
             super.onCharacteristicChanged(gatt, characteristic)
+            setCharacteristicNotification(characteristic,true)
             characteristic.let {
                 //can send a broadcast
 //                val batteryLevel = characteristic.value[0].toInt()
@@ -190,9 +191,9 @@ class BlueToothLeService : Service() {
         if (bluetoothDevice.address != null
             && bluetoothGatt != null
         ) {
-            Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
+            Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.")
             if (bluetoothGatt!!.connect()) {
-                mConnectionState = Const.STATE_CONNECTING;
+                mConnectionState = Const.STATE_CONNECTING
 
             } else {
                 mConnectionState = Const.STATE_DISCONNECTED
@@ -201,7 +202,7 @@ class BlueToothLeService : Service() {
         }
     }
 
-    /**
+    /** provide interface to other component access characteristic with this invoke method in BLEsevices
      * read data from characteristic, every characteristic also has uuid,we can used for read and write the value of them.
     by checking the source code we can find the value is defined a byte array,also characteristics has permissions
     defined in it so sometimes we can't read/write data cause permissions.
@@ -224,7 +225,7 @@ class BlueToothLeService : Service() {
 
     }
 
-    /**
+    /** provide interface to other component access characteristic with this invoke method in BLEsevices
     the mainly advantage of Ble , it can subscribe to a notification
     traditional Bluetooth device constantly receiving data from other ends.
     BLE don't send any data, so need to register for a notification to receive changes.
@@ -242,18 +243,22 @@ class BlueToothLeService : Service() {
             Log.d(TAG, "bluetoothGatt is not initialized")
             return
         }
+        //subscribe notification
         bluetoothGatt!!.setCharacteristicNotification(characteristic, enable)
+        //then write the descriptor that this characteristic is subscribed
         if (uuid_target_attritubes.equals(characteristic.uuid)) {
-            //find the descriptor in this characteristic, which can enable notification
-            //by specific uuid
+            //find the descriptor in this characteristic under client characterisitc config.
+
             val descriptor = characteristic.getDescriptor(
                 UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG)
             )
-            //set the notification on.
+            //set the notification on as description
             descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             //write this descriptor in character.
             bluetoothGatt!!.writeDescriptor(descriptor)
         }
+
+
     }
 
 
@@ -312,13 +317,13 @@ class BlueToothLeService : Service() {
 //                    Log.d(TAG, "temperature format SINT32.")
 //                }
 //                var format=-1
-
+                //Fahrenheit
                 val temperature: Int = shortUnsignedAtOffset(bluetoothGattCharacteristic.value,1)
-                Log.d(TAG, String.format("Received temperature: %d", temperature))
+                Log.d(TAG, String.format("Received temperature: ", temperature))
                 intent.putExtra(Const.EXTRA_DATA, temperature.toString())
             } else {
                 // For all other profiles, writes the data formatted in HEX.
-                val data: ByteArray = bluetoothGattCharacteristic.getValue()
+                val data: ByteArray? = bluetoothGattCharacteristic.getValue()
                 if (data != null && data.size > 0) {
                     val stringBuilder = StringBuilder(data.size)
                     for (byteChar in data) stringBuilder.append(String.format("%02X ", byteChar))

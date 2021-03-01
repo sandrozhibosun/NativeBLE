@@ -4,16 +4,12 @@ import android.Manifest
 import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanResult
+import android.bluetooth.le.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
+import android.os.*
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
@@ -29,12 +25,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.apolis.bltindoor.app.Const
 import com.apolis.bltindoor.databinding.ScanFragmentBinding
 import com.apolis.bltindoor.helper.DaggerAppComponent
-
+import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 
 class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
-    lateinit var binding: ScanFragmentBinding
+    private lateinit var binding: ScanFragmentBinding
 
     @Inject//bluetooth adapter
     lateinit var bluetoothAdapter: BluetoothAdapter
@@ -61,7 +58,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         }
     }
 
-    private fun makeGattUpdateIntentFilter(): IntentFilter? {
+    private fun makeGattUpdateIntentFilter(): IntentFilter {
         val intentFilter = IntentFilter()
         intentFilter.addAction(Const.ACTION_GATT_CONNECTED)
         intentFilter.addAction(Const.ACTION_GATT_DISCONNECTED)
@@ -93,6 +90,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             //notice,usually the scan device  name will be null
             //add to recycler view
             this@ScanFragment.onGet(result!!.device)
+            retainInstance = true//prevent destory fragment on rotate, but now viewmodel is better
         }
 
     }
@@ -148,7 +146,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun startLEScan(enable: Boolean) {
         //we can declared filter and scan setting here, eg:
-        /*
+        /**
         val uuid =ParcelUuid(ServiceUUID)
         val filter=ScanFilter.Builder().setServiceUuid(uuid).build
         val filters=listof(filter)
@@ -159,10 +157,6 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
         .build()
          */
 
-        /**
-         * ble Advertising to broadcast data packages to all nearby devices without having to establish a connection first.
-         * but ble advertising not support every device
-         */
 
         when (enable) {//use handler here to set time out
             true -> {
@@ -210,7 +204,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
             }
         Intent(requireActivity(), BlueToothLeService::class.java)
             .also {
-                Log.d("abc", "start Intent")
+                Log.d(Tag, "start Intent")
                 requireActivity().bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
             }
 
@@ -284,7 +278,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     private fun onPermissionGranted(permission: String) {
         when (permission) {
             Manifest.permission.ACCESS_FINE_LOCATION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkGPSIsOpen()) {
-                var builder = AlertDialog.Builder(requireContext())
+                val builder = AlertDialog.Builder(requireContext())
                 builder
                     .setTitle("Need Permisstions")
                     .setMessage("please give the permission")
@@ -313,8 +307,8 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
 
     //if not get permission, and user want to open app setting, we can use this one.
     private fun openAppSettings() {
-        var intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-        var uri = Uri.fromParts("package", activity?.packageName, null)
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        val uri = Uri.fromParts("package", activity?.packageName, null)
         intent.setData(uri)
         startActivityForResult(intent, REQUEST_CODE_OPEN_GPS)
     }
@@ -359,6 +353,170 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    /**
+     * ble Advertising to broadcast data packages to all nearby devices without having to establish a connection first.
+     * but ble advertising not support every device, use below method to check:
+     * isLe2MPhySupported()
+     * isLeCodedPhySupported()
+     * isLeExtendedAdvertisingSupported()
+     * isLePeriodicAdvertisingSupported()
+     *
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun advertisingTest_1MPHY() {
+
+        var currentAdvertisingSet: AdvertisingSet? = null
+
+        val advertiser = bluetoothAdapter.bluetoothLeAdvertiser
+
+        val parameters = AdvertisingSetParameters.Builder()
+            .setLegacyMode(true)//default is true
+            .setConnectable(true)
+            .setInterval(AdvertisingSetParameters.INTERVAL_HIGH)
+            .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_MEDIUM)
+            .build()
+
+        val data = AdvertiseData.Builder()
+            .setIncludeDeviceName(true)
+            .build()
+        val callback = object : AdvertisingSetCallback() {
+            override fun onAdvertisingSetStarted(
+                advertisingSet: AdvertisingSet,
+                txPower: Int,
+                status: Int
+            ) {
+                Log.d(
+                    Tag, "onAdvertisingSetStarted(): txPower:" + txPower + " , status: "
+                            + status
+                )
+                currentAdvertisingSet = advertisingSet
+
+            }
+
+            override fun onAdvertisingDataSet(advertisingSet: AdvertisingSet?, status: Int) {
+                Log.d(Tag, "onAdvertisingDataSet() :status:$status")
+            }
+
+            override fun onScanResponseDataSet(advertisingSet: AdvertisingSet?, status: Int) {
+                Log.d(Tag, "onScanResponseDataSet(): status:$status")
+            }
+
+            override fun onAdvertisingSetStopped(advertisingSet: AdvertisingSet?) {
+                Log.d(Tag, "onAdvertisingSetStopped():")
+            }
+        }
+        advertiser.startAdvertisingSet(parameters, data, null, null, null, callback)
+
+        // After onAdvertisingSetStarted callback is called, you can modify the
+        // advertising data and scan response data:
+        currentAdvertisingSet!!.setAdvertisingData(
+            AdvertiseData.Builder().setIncludeDeviceName(true).setIncludeTxPowerLevel(true).build()
+        )
+
+        // Wait for onAdvertisingDataSet callback...
+        currentAdvertisingSet!!.setScanResponseData(
+            AdvertiseData.Builder().addServiceUuid(ParcelUuid(UUID.randomUUID())).build()
+        )
+
+        // Wait for onScanResponseDataSet callback...
+
+        // When done with the advertising:
+        advertiser.stopAdvertisingSet(callback)
+
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun advertisingTest_2MPHY() {//2m phy is battery efficient
+
+        var currentAdvertisingSet: AdvertisingSet? = null//had a gatt defined in it
+
+        val advertiser = bluetoothAdapter.bluetoothLeAdvertiser
+        // when using BLE_2Mphy, must check support or not
+        // Check if all features are supported
+        if (!bluetoothAdapter.isLe2MPhySupported()) {
+            Log.e(Tag, "2M PHY not supported!")
+            return
+        }
+        if (!bluetoothAdapter.isLeExtendedAdvertisingSupported()) {
+            Log.e(Tag, "LE Extended Advertising not supported!")
+            return
+        }
+        var maxDataLength = bluetoothAdapter.getLeMaximumAdvertisingDataLength()
+
+        val parameters = AdvertisingSetParameters.Builder()
+            .setLegacyMode(false)
+            .setInterval(AdvertisingSetParameters.INTERVAL_HIGH)
+            .setTxPowerLevel(AdvertisingSetParameters.TX_POWER_MEDIUM)
+            .setPrimaryPhy(BluetoothDevice.PHY_LE_1M)
+            .setSecondaryPhy(BluetoothDevice.PHY_LE_2M)
+
+        var data = AdvertiseData.Builder().addServiceData(
+
+            ParcelUuid(UUID.randomUUID()),
+            "You should be able to fit large amounts of data up to maxDataLength. This goes up to 1650 bytes . For legacy advertising this would not work ".toByteArray()
+        ).build()
+
+        var callback = object : AdvertisingSetCallback() {
+            override fun onAdvertisingSetStarted(
+                advertisingSet: AdvertisingSet?,
+                txPower: Int,
+                status: Int
+            ) {
+                super.onAdvertisingSetStarted(advertisingSet, txPower, status)
+                Log.i(
+                    Tag, "onAdvertisingSetStarted(): txPower:" + txPower + " , status: "
+                            + status
+                )
+                currentAdvertisingSet = advertisingSet;
+                Log.d(
+                    Tag, "onAdvertisingSetStarted(): txPower:" + txPower + " , status: "
+                            + status
+                )
+                currentAdvertisingSet = advertisingSet
+            }
+
+
+            override fun onAdvertisingSetStopped(advertisingSet: AdvertisingSet?) {
+                super.onAdvertisingSetStopped(advertisingSet)
+                Log.d(Tag, "onAdvertisingSetStopped():")
+            }
+
+
+        }
+
+        advertiser.startAdvertisingSet(parameters.build(), data, null, null, null, callback);
+// After the set starts, you can modify the data and parameters of currentAdvertisingSet.
+        var nextData=
+            AdvertiseData.Builder().addServiceData(
+
+                ParcelUuid(UUID.randomUUID()),
+                "You should be able to fit large amounts of data up to maxDataLength. This goes up to 1650 bytes . For legacy advertising this would not work ".toByteArray()
+            ).build()
+
+        currentAdvertisingSet!!.setAdvertisingData(nextData
+
+        )
+
+        // Wait for onAdvertisingEnabled callback...
+        currentAdvertisingSet!!.enableAdvertising(true, 0, 0);
+        // Wait for onAdvertisingEnabled callback...
+
+        // Or modify the parameters - i.e. lower the tx power
+        currentAdvertisingSet!!.enableAdvertising(false, 0, 0);
+        // Wait for onAdvertisingEnabled callback...
+        currentAdvertisingSet!!.setAdvertisingParameters(
+            parameters.setTxPowerLevel
+                (AdvertisingSetParameters.TX_POWER_LOW).build()
+        );
+        // Wait for onAdvertisingParametersUpdated callback...
+        currentAdvertisingSet!!.enableAdvertising(true, 0, 0);
+        // Wait for onAdvertisingEnabled callback...
+
+        // When done with the advertising:
+        advertiser.stopAdvertisingSet(callback);
+
     }
 
 
