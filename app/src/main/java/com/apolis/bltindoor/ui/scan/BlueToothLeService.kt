@@ -3,7 +3,6 @@ package com.apolis.bltindoor.ui.scan
 import android.app.Service
 import android.bluetooth.*
 import android.content.Intent
-import android.nfc.NfcAdapter.EXTRA_DATA
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
@@ -18,6 +17,13 @@ import javax.inject.Inject
 class BlueToothLeService : Service() {
     companion object {
         val TAG = BlueToothLeService::class.java.name
+
+        fun shortUnsignedAtOffset(byteArray: ByteArray, offset: Int): Int {
+            val value = byteArray
+            val lowerByte = value[offset].toInt() and 0xFF
+            val upperByte = value[offset + 1].toInt() and 0xFF // Note: interpret MSB as unsigned.
+            return (upperByte shl 8) + lowerByte
+        }
     }
 
     @Inject
@@ -34,6 +40,11 @@ class BlueToothLeService : Service() {
     //basically it's a connection between client device and server device.
     var bluetoothGatt: BluetoothGatt? = null
     val batteryService = UUID.fromString(SampleGattAttributes.Battery_Service)
+
+    //
+    val temperatureService = UUID.fromString(SampleGattAttributes.TiTemperatureService)
+    val temperatureData = UUID.fromString(SampleGattAttributes.TiTemperatureData)
+
     val accelerometerService = UUID.fromString(SampleGattAttributes.TiAccelerometerService)
     val accelerometerData = UUID.fromString(SampleGattAttributes.TiAccelerometerData)
 
@@ -88,17 +99,17 @@ class BlueToothLeService : Service() {
 //            val characteristic = gatt?.getService(batteryService)?.getCharacteristic(
 //                UUID.fromString(SampleGattAttributes.Battery_Level)
 //            )
-            val service = gatt?.getService(accelerometerService)
+            val service = gatt?.getService(temperatureService)
             if (service == null) {
-                Log.d(TAG, "service didn't detected: ${accelerometerData}")
+                Log.d(TAG, "service didn't detected: ${temperatureService}")
                 return
             }
             val characteristic = service.getCharacteristic(
-                accelerometerData
+                temperatureData
             )
             //read battery level characteristic
             if (characteristic == null) {
-                Log.d(TAG, "characteristic didn't detected: ${accelerometerData}")
+                Log.d(TAG, "characteristic didn't detected: ${temperatureData}")
                 return
             } else {
                 gatt.readCharacteristic(characteristic) // or we can use customized method here
@@ -276,25 +287,35 @@ class BlueToothLeService : Service() {
     ) {
         val intent = Intent(action)
         /**
-         *   // This is special handling for the T1 sensor Accelerometer.  Data parsing is
+         *   // This is special handling for the T1 sensor temperature.  Data parsing is
         // carried out as per profile specifications:
-        // http://developer.bluetooth.org/gatt/characteristics/Pages/
+        // http://developer.bluetooth.org
          */
+        /**
+         *  all the bit array in ti sensor store 16 bit two's complement values in the awkward format
+         * LSB MSB, which cannot be directly parsed as getIntValue(FORMAT_SINT16, offset)
+         * because the bytes are stored in the "wrong" direction.
+         *
+         * This function extracts these 16 bit two's complement values.
+         */
+
         if (bluetoothGattCharacteristic != null) {
 
-            if (SampleGattAttributes.TiAccelerometerData == bluetoothGattCharacteristic.uuid.toString()) {
-                val flag: Int = bluetoothGattCharacteristic.properties
-                var format = -1
-                if (flag and 0x01 != 0) {
-                    format = BluetoothGattCharacteristic.FORMAT_UINT16
-                    Log.d(TAG, "Accelerometer format UINT16.")
-                } else {
-                    format = BluetoothGattCharacteristic.FORMAT_UINT8
-                    Log.d(TAG, "Accelerometer format UINT8.")
-                }
-                val accelerometer: Int = bluetoothGattCharacteristic.getIntValue(format, 1)
-                Log.d(TAG, String.format("Received Accelerometer: %d", accelerometer))
-                intent.putExtra(Const.EXTRA_DATA, accelerometer.toString())
+            if (SampleGattAttributes.TiTemperatureData == bluetoothGattCharacteristic.uuid.toString()) {
+//                val flag: Int = bluetoothGattCharacteristic.properties
+//                var format = -1
+//                if (flag and 0x01 != 0) {
+//                    format = BluetoothGattCharacteristic.FORMAT_SINT16
+//                    Log.d(TAG, "temperature format SINT16.")
+//                } else {
+//                    format = BluetoothGattCharacteristic.FORMAT_SINT32
+//                    Log.d(TAG, "temperature format SINT16.")
+//                }
+//                var format=-1
+
+                val temperature: Int = shortUnsignedAtOffset(bluetoothGattCharacteristic.value,1)
+                Log.d(TAG, String.format("Received temperature: %d", temperature))
+                intent.putExtra(Const.EXTRA_DATA, temperature.toString())
             } else {
                 // For all other profiles, writes the data formatted in HEX.
                 val data: ByteArray = bluetoothGattCharacteristic.getValue()
@@ -306,10 +327,8 @@ class BlueToothLeService : Service() {
                     )
                 }
             }
-        }
-        else
-        {
-            Log.d(TAG,"target characteristic is null")
+        } else {
+            Log.d(TAG, "target characteristic is null")
         }
 
         sendBroadcast(intent)
@@ -337,6 +356,12 @@ class BlueToothLeService : Service() {
         close()
         return super.onUnbind(intent)
     }
+
+    /**
+     * Retrieves a list of supported GATT services on the connected device. This should be
+     * invoked only after `BluetoothGatt#discoverServices()` completes successfully.
+     * @return A `List` of supported services.
+     */
 
     fun getSupportedGattServices(): List<BluetoothGattService?>? {
         return if (bluetoothGatt == null) null else bluetoothGatt?.getServices()

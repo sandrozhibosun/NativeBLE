@@ -18,6 +18,6 @@ class OperationViewModel  : ViewModel() {
 //        component.inject(this)
 
     }
-    // TODO: Implement the ViewModel
+
 
 }

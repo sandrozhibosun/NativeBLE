@@ -25,7 +25,7 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
     private val bluetoothGattServerCallback: BluetoothGattServerCallback =
         object : BluetoothGattServerCallback() {
             /**
-             * 1.连接状态发生变化时
+             * when connection got changed
              * @param device
              * @param status
              * @param newState
@@ -54,7 +54,6 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
                 super.onConnectionStateChange(device, status, newState)
                 currentDevice = device
             }
-
             override fun onServiceAdded(status: Int, service: BluetoothGattService) {
                 super.onServiceAdded(status, service)
                 Log.e(TAG, String.format("onServiceAdded：status = %s", status))
@@ -93,7 +92,7 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
             }
 
             /**
-             * 3. onCharacteristicWriteRequest,接收具体的字节
+             * 3. onCharacteristicWriteRequest, receive the bytes here
              * @param device
              * @param requestId
              * @param characteristic
@@ -126,13 +125,14 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
                     offset,
                     requestBytes
                 )
-                //4.处理响应内容
+                //4. managed response data
                 var intentAction = Const.ACTION_RESPONSE_TO_CLIENT
                 onResponseToClient(requestBytes, device, requestId, characteristic)
             }
 
             /**
-             * 2.描述被写入时，在这里执行 bluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS...  收，触发 onCharacteristicWriteRequest
+             * 2.when execute bluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS...
+             *  start onCharacteristicWriteRequest
              * @param device
              * @param requestId
              * @param descriptor
@@ -171,7 +171,8 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
             }
 
             /**
-             * 5.特征被读取。当回复响应成功后，客户端会读取然后触发本方法
+             * 5. when read the characteristic, and response successful, the client device
+             * will read and invoke this method
              * @param device
              * @param requestId
              * @param offset
@@ -201,7 +202,7 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
                     null
                 )
             }
-
+            //if data got changed , send notification
             override fun onNotificationSent(device: BluetoothDevice, status: Int) {
                 super.onNotificationSent(device, status)
                 Log.e(
@@ -256,12 +257,7 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
         Log.e(TAG, "2. initServices ok")
     }
 
-    /**
-     * Retrieves a list of supported GATT services on the connected device. This should be
-     * invoked only after `BluetoothGatt#discoverServices()` completes successfully.
-     *
-     * @return A `List` of supported services.
-     */
+
     private fun onResponseToClient(
         reqeustBytes: ByteArray,
         device: BluetoothDevice,
@@ -279,7 +275,7 @@ class BluetoothLeServer @Inject constructor(var mBluetoothManager: BluetoothMana
         Log.e(TAG, String.format("4.onResponseToClient：requestId = %s", requestId))
         //        String msg = OutputStringUtil.transferForPrint(reqeustBytes);
         val msg = String(reqeustBytes)
-        println("4.收到:$msg")
+        println("4.received:$msg")
 //        broadcastUpdate(intentAction, msg)
         currentDevice = device
     }

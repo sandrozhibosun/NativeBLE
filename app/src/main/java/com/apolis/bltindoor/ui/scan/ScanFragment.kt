@@ -81,6 +81,7 @@ class ScanFragment : Fragment(), DeviceGetListener, OnConnectCallListener {
     var scanCallback = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            //notice,usually the scan device  name will be null
             //add to recycler view
             this@ScanFragment.onGet(result!!.device)
         }
